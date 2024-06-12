@@ -1,25 +1,54 @@
 #include "Arduino.h"
-#include "HardwareSerial.h"        //调用串口库
-#define UART_FULL_THRESH_DEFAULT 2048         //修改缓冲区大小，这个是HardwareSerial.h文件中说的修改方法，我试了，并没有发挥作用
-#define CJ_RxPin 34                //设置RX管脚
-#define CJ_TxPin 35                //设置TX管脚
-HardwareSerial Serial_CJ(0);       //定向串口1
+#include "WiFi.h"
+#include "PubSubClient.h"
 
-void Collect_Callback(){               
-  String Collect_Data = "";                     //定义一个String类型的变量
-  while(Serial_CJ.available()){                 //用While判断缓冲区是否有内容
-    Collect_Data += char(Serial_CJ.read());     //取出缓冲区内容
-  } 
-  Serial.print(Collect_Data);                     //输出取出的内容
-  Collect_Data = "";                              //清空内容
- }
-void setup() {
-	Serial.begin(115200);           //设置初始化串口0
-	Serial_CJ.begin(115200,SERIAL_8N1,CJ_RxPin,CJ_TxPin);  //初始化串口1，初始化参数可以去HardwareSerial.h文件中查看
-	Serial_CJ.onReceive(Collect_Callback);    //定义串口中断函数
-}
-void loop(){
-	delay(1000);             //延时
+/* 连接您的WIFI SSID和密码 */
+#define WIFI_SSID         "Redmi K60"
+#define WIFI_PASSWD       "201910088047"
+ 
+/* 线上环境域名和端口号 */
+#define MQTT_SERVER       "你的域名"
+#define MQTT_PORT         1883//端口号
+#define MQTT_USRNAME      "你的username"
+#define CLIENT_ID         "你的clientId"
+#define MQTT_PASSWD       "你的password"
+ 
+//发布消息用的topic
+#define PubTopic "你的topic"
+
+
+//wifi初始化
+void wifiInit()
+{
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(WIFI_SSID, WIFI_PASSWD);
+  while (WiFi.status() != WL_CONNECTED)
+  {
+    delay(1000);
+    Serial.println("WiFi not Connect");
+  }
+ 
+  Serial.println("Connected to AP");
+  Serial.println("IP address: ");
+  Serial.println(WiFi.localIP());
+ 
+  Serial.print("espClient [");
+ 
+
 }
 
+void setup()
+{
+/* initialize serial for debugging */
+    Serial.begin(115200); //开启串口
+    Serial.println("Demo Start");
+    wifiInit();//连接wifi
+
+}
+ 
+// the loop function runs over and over again forever
+void loop()
+{
+  delay(1000);
+}
 
