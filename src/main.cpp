@@ -1,46 +1,25 @@
 #include "Arduino.h"
-#include "BluetoothSerial.h"
+#include "HardwareSerial.h"        //调用串口库
+#define UART_FULL_THRESH_DEFAULT 2048         //修改缓冲区大小，这个是HardwareSerial.h文件中说的修改方法，我试了，并没有发挥作用
+#define CJ_RxPin 34                //设置RX管脚
+#define CJ_TxPin 35                //设置TX管脚
+HardwareSerial Serial_CJ(0);       //定向串口1
 
-#if !defined(CONFIG_BT_ENABLED) || !defined(CONFIG_BLUEDROID_ENABLED)
-#error Bluetooth is not enabled! Please run `make menuconfig` to and enable it
-#endif
-
-BluetoothSerial SerialBT;
-
-// 定义一个short型数组来存储接收到的数据
-// 数组大小为512，因为每个short可以存储两个字节，所以可以存储1024个字节
-short receivedData[512];
-int dataIndex = 0; // 用于跟踪数组中当前存储位置的索引
-
+void Collect_Callback(){               
+  String Collect_Data = "";                     //定义一个String类型的变量
+  while(Serial_CJ.available()){                 //用While判断缓冲区是否有内容
+    Collect_Data += char(Serial_CJ.read());     //取出缓冲区内容
+  } 
+  Serial.print(Collect_Data);                     //输出取出的内容
+  Collect_Data = "";                              //清空内容
+ }
 void setup() {
-  Serial.begin(115200);
-  SerialBT.begin("ESP32test"); // 蓝牙设备名称
-  Serial.println("The device started, now you can pair it with bluetooth!");
+	Serial.begin(115200);           //设置初始化串口0
+	Serial_CJ.begin(115200,SERIAL_8N1,CJ_RxPin,CJ_TxPin);  //初始化串口1，初始化参数可以去HardwareSerial.h文件中查看
+	Serial_CJ.onReceive(Collect_Callback);    //定义串口中断函数
+}
+void loop(){
+	delay(1000);             //延时
 }
 
-void loop() {
-  static byte byteBuffer[2]; // 用于暂存两个字节
-  static int bufferIndex = 0; // byteBuffer的索引
 
-  // 检查是否有从蓝牙接收到的数据
-  while (SerialBT.available() > 0 && dataIndex < 512) {
-    int byteRead = SerialBT.read(); // 读取一个字节
-
-    // 检查read()是否真的读取到了数据
-    if (byteRead != -1) {
-      byteBuffer[bufferIndex++] = (byte)byteRead; // 存储到buffer中
-
-      // 检查是否收集了两个字节
-      if (bufferIndex == 2) {
-        // 将两个字节合并为一个short型变量
-        // 注意：这里可能需要根据实际的字节序来调整
-        receivedData[dataIndex++] = (short)((byteBuffer[0] << 8) | byteBuffer[1]);
-
-        // 重置bufferIndex以便于接收下一对字节
-        bufferIndex = 0;
-      }
-    }
-  }
-  
-  // 在这里可以处理接收到的short型数组数据
-}
